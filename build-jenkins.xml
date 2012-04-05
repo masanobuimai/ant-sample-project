@@ -60,20 +60,55 @@
   </target>
 
 
-  <target name="test" depends="compile-test" description="テストの実行">
+  <target name="test" depends="compile-test" description="テストの実行とカバレッジレポートの作成">
+    <!-- EclEmma(JaCoCo)の定義 -->
+    <property name="jacoco.home" value="${tool.dir}/jacoco-0.5.6"/>
+    <taskdef resource="org/jacoco/ant/antlib.xml">
+      <classpath path="${jacoco.home}/lib/jacocoant.jar"/>
+    </taskdef>
+    <!-- ここまで -->
+
     <delete dir="${result.test.dir}" />
     <mkdir dir="${result.test.dir}" />
 
-    <junit fork="on" printsummary="on" maxmemory="256m">
-      <classpath location="${dest.test.dir}" />
-      <classpath location="${dest.java.dir}" />
-      <classpath refid="test.classpath" />
+    <coverage>
+      <junit fork="on" printsummary="on" maxmemory="256m">
+        <classpath location="${dest.test.dir}" />
+        <classpath location="${dest.java.dir}" />
+        <classpath refid="test.classpath" />
 
-      <formatter type="xml" />
-      <batchtest todir="${result.test.dir}">
-        <fileset dir="${dest.test.dir}" includes="**/*Test.class" />
-      </batchtest>
-    </junit>
+        <formatter type="xml" />
+        <batchtest todir="${result.test.dir}">
+          <fileset dir="${dest.test.dir}" includes="**/*Test.class" />
+        </batchtest>
+      </junit>
+    </coverage>
+
+    <report>
+      <executiondata>
+        <file file="jacoco.exec"/>
+      </executiondata>
+      <structure name="${ant.project.name}">
+        <classfiles>
+          <fileset dir="${dest.java.dir}"/>
+        </classfiles>
+        <sourcefiles encoding="UTF-8">
+          <fileset dir="${src.java.dir}"/>
+        </sourcefiles>
+      </structure>
+      <xml destfile="${result.dir}/coverage_jacoco.xml" />
+      <html destdir="${dest.dir}/report/coverage"/>
+
+    </report>
+    <!-- JaCoCoのレポートをEMMA形式に変換する -->
+    <xslt style="${jacoco.home}/jacoco_to_emma.xslt"
+          in="${result.dir}/coverage_jacoco.xml"
+          out="${result.dir}/coverage.xml"
+          classpath="${jacoco.home}/saxon9he.jar">
+      <xmlcatalog>
+        <dtd publicid="-//JACOCO//DTD Report 1.0//EN" location="${jacoco.home}/coverage/report.dtd"/>
+      </xmlcatalog>
+    </xslt>
   </target>
 
 
