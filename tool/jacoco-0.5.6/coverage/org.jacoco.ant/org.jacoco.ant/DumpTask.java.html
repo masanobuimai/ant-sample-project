@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../.resources/report.gif" type="image/gif"/><title>DumpTask.java</title><link rel="stylesheet" href="../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../../.sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">JaCoCo</a> &gt; <a href="../index.html" class="el_bundle">org.jacoco.ant</a> &gt; <a href="index.html" class="el_package">org.jacoco.ant</a> &gt; <span class="el_source">DumpTask.java</span></div><h1>DumpTask.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2009, 2012 Mountainminds GmbH &amp; Co. KG and Contributors
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Brock Janiczak - initial API and implementation
+ *    
+ *******************************************************************************/
+package org.jacoco.ant;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Task;
+import org.apache.tools.ant.util.FileUtils;
+import org.jacoco.core.data.ExecutionDataWriter;
+import org.jacoco.core.runtime.AgentOptions;
+import org.jacoco.core.runtime.RemoteControlReader;
+import org.jacoco.core.runtime.RemoteControlWriter;
+
+/**
+ * Ant task for remotely controlling an application that is running with the
+ * tcpserver output mode
+ */
+<span class="fc" id="L33">public class DumpTask extends Task {</span>
+
+<span class="fc" id="L35">	private boolean dump = true;</span>
+<span class="fc" id="L36">	private boolean reset = false;</span>
+<span class="fc" id="L37">	private File destfile = null;</span>
+<span class="fc" id="L38">	private String address = AgentOptions.DEFAULT_ADDRESS;</span>
+<span class="fc" id="L39">	private int port = AgentOptions.DEFAULT_PORT;</span>
+<span class="fc" id="L40">	private boolean append = true;</span>
+
+	/**
+	 * Sets the location of the execution data file to write. This parameter is
+	 * required when dump is &lt;code&gt;true&lt;/code&gt;. Default is
+	 * &lt;code&gt;jacoco.exec&lt;/code&gt;
+	 * 
+	 * @param destfile
+	 *            Location to write execution data to
+	 */
+	public void setDestfile(final File destfile) {
+<span class="fc" id="L51">		this.destfile = destfile;</span>
+<span class="fc" id="L52">	}</span>
+
+	/**
+	 * IP Address or hostname to connect to. Defaults to &lt;code&gt;localhost&lt;/code&gt;
+	 * 
+	 * @param address
+	 *            IP Address or hostname to connect to
+	 */
+	public void setAddress(final String address) {
+<span class="fc" id="L61">		this.address = address;</span>
+<span class="fc" id="L62">	}</span>
+
+	/**
+	 * Port number to connect to. Default is &lt;code&gt;6300&lt;/code&gt;
+	 * 
+	 * @param port
+	 *            Port to connect to
+	 */
+	public void setPort(final int port) {
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (port &lt;= 0) {</span>
+<span class="fc" id="L72">			throw new BuildException(&quot;Invalid port value&quot;);</span>
+		}
+
+<span class="nc" id="L75">		this.port = port;</span>
+<span class="nc" id="L76">	}</span>
+
+	/**
+	 * &lt;code&gt;true&lt;/code&gt; if the destination file it to be appended to.
+	 * &lt;code&gt;false&lt;/code&gt; if the file is to be overwritten
+	 * 
+	 * @param append
+	 *            &lt;code&gt;true&lt;/code&gt; if the destination file should be appended
+	 *            to
+	 */
+	public void setAppend(final boolean append) {
+<span class="nc" id="L87">		this.append = append;</span>
+<span class="nc" id="L88">	}</span>
+
+	/**
+	 * Sets whether execution data should be downloaded from the remote host.
+	 * Defaults to &lt;code&gt;false&lt;/code&gt;
+	 * 
+	 * @param dump
+	 *            &lt;code&gt;true&lt;/code&gt; to download execution data
+	 */
+	public void setDump(final boolean dump) {
+<span class="fc" id="L98">		this.dump = dump;</span>
+<span class="fc" id="L99">	}</span>
+
+	/**
+	 * Sets whether a reset command should be sent after the execution data has
+	 * been copied. Defaults to &lt;code&gt;false&lt;/code&gt;
+	 * 
+	 * @param reset
+	 *            &lt;code&gt;true&lt;/code&gt; to reset execution data
+	 */
+	public void setReset(final boolean reset) {
+<span class="fc" id="L109">		this.reset = reset;</span>
+<span class="fc" id="L110">	}</span>
+
+	@Override
+	public void execute() throws BuildException {
+
+<span class="fc" id="L115">		OutputStream output = null;</span>
+
+		try {
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">			if (dump) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">				if (destfile == null) {</span>
+<span class="fc" id="L121">					throw new BuildException(</span>
+<span class="fc" id="L122">							&quot;Destination file is required when dumping execution data&quot;);</span>
+				}
+<span class="fc" id="L124">				FileUtils.getFileUtils().createNewFile(destfile, true);</span>
+<span class="fc" id="L125">				output = new FileOutputStream(destfile, append);</span>
+			} else {
+<span class="fc" id="L127">				output = new Nul();</span>
+			}
+
+<span class="fc" id="L130">			final Socket socket = new Socket(InetAddress.getByName(address),</span>
+<span class="fc" id="L131">					port);</span>
+<span class="fc" id="L132">			final RemoteControlWriter remoteWriter = new RemoteControlWriter(</span>
+<span class="fc" id="L133">					socket.getOutputStream());</span>
+<span class="fc" id="L134">			final RemoteControlReader remoteReader = new RemoteControlReader(</span>
+<span class="fc" id="L135">					socket.getInputStream());</span>
+<span class="fc" id="L136">			final ExecutionDataWriter outputWriter = new ExecutionDataWriter(</span>
+<span class="fc" id="L137">					output);</span>
+<span class="fc" id="L138">			remoteReader.setSessionInfoVisitor(outputWriter);</span>
+<span class="fc" id="L139">			remoteReader.setExecutionDataVisitor(outputWriter);</span>
+
+<span class="fc" id="L141">			remoteWriter.visitDumpCommand(dump, reset);</span>
+			// Read session and/or execution data
+<span class="fc" id="L143">			remoteReader.read();</span>
+
+<span class="fc" id="L145">			socket.close();</span>
+<span class="fc" id="L146">		} catch (final IOException e) {</span>
+<span class="fc" id="L147">			throw new BuildException(&quot;Unable to dump coverage data&quot;, e);</span>
+<span class="fc" id="L148">		} finally {</span>
+<span class="fc" id="L149">			FileUtils.close(output);</span>
+<span class="fc" id="L150">		}</span>
+<span class="fc" id="L151">	}</span>
+
+<span class="fc" id="L153">	private static class Nul extends OutputStream {</span>
+		@Override
+		public void write(final int b) throws IOException {
+			// nothing to do
+<span class="fc" id="L157">		}</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.5.6.201201232323</span>Code Coverage Report for JaCoCo 0.5.6.201201232323</div></body></html>

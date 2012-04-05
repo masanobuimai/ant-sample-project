@@ -1,0 +1,54 @@
+Manifest-Version: 1.0
+Created-By: 1.6.0_30 (Sun Microsystems Inc.)
+
+Name: examples/java/ClassInfo.java
+SHA1-Digest: qEhBME1Mn37M9kwcQpn5oImOPto=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/Div.java
+SHA1-Digest: dPmyVllW62eBCGUjd6eXRfWDxwI=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/Const.java
+SHA1-Digest: iM3OtZ2pOVfZfXpY1imSLZotZ8w=
+
+Name: examples/ant/src/org/jacoco/examples/parser/ExpressionParserTest
+ .java
+SHA1-Digest: ipxClF3ci1q+zv9l89Y0IA9ld1I=
+
+Name: examples/java/MBeanClient.java
+SHA1-Digest: gccS7NFzzf9yxIB54fiPkTPAQTk=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/IExpression.jav
+ a
+SHA1-Digest: WRCTPa15Jb0KSfFoGuWQTiq34EU=
+
+Name: examples/java/CoreTutorial.java
+SHA1-Digest: 7Z1cEKXoCtEf/irJsfmk7rsAxZo=
+
+Name: examples/java/ReportGenerator.java
+SHA1-Digest: Ko9lsfLUjKQnTWk7uVZMnikOkks=
+
+Name: examples/java/ExecutionDataServer.java
+SHA1-Digest: 1Usbj5cId5TQLIoIxP+y2ZwMDlk=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/Add.java
+SHA1-Digest: SUeJ5TTSuuwXtAQVeY0RSW+i4bI=
+
+Name: examples/java/ExecutionDataClient.java
+SHA1-Digest: TUgAVG17WPS87YuXCcm6fQlhKeo=
+
+Name: examples/ant/build.xml
+SHA1-Digest: VNfTOZkfoLfI6zstVSHIRBdePJs=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/Mul.java
+SHA1-Digest: Ai1I1X21wbIQtQ87dTcnmV61LOM=
+
+Name: examples/ant/src/org/jacoco/examples/expressions/Sub.java
+SHA1-Digest: Uo2QN+dGSZ1gx6xGdb3aDDw3VFY=
+
+Name: examples/java/ExecDump.java
+SHA1-Digest: DLqty28wjxqmHir+uRoeTFEqWWA=
+
+Name: examples/ant/src/org/jacoco/examples/parser/ExpressionParser.jav
+ a
+SHA1-Digest: E3EaBy113aqvra5EngO8JAAt8I0=
+

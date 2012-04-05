@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../.resources/report.gif" type="image/gif"/><title>AgentOptions.java</title><link rel="stylesheet" href="../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../../.sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">JaCoCo</a> &gt; <a href="../index.html" class="el_bundle">org.jacoco.core</a> &gt; <a href="index.html" class="el_package">org.jacoco.core.runtime</a> &gt; <span class="el_source">AgentOptions.java</span></div><h1>AgentOptions.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2009, 2012 Mountainminds GmbH &amp; Co. KG and Contributors
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Marc R. Hoffmann - initial API and implementation
+ *    
+ *******************************************************************************/
+package org.jacoco.core.runtime;
+
+import static java.lang.String.format;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Utility to create and parse options for the runtime agent. Options are
+ * represented as a string in the following format:
+ * 
+ * &lt;pre&gt;
+ *   key1=value1,key2=value2,key3=value3
+ * &lt;/pre&gt;
+ */
+<span class="fc" id="L30">public final class AgentOptions {</span>
+
+	/**
+	 * Specifies the output file for execution data. Default is
+	 * &lt;code&gt;jacoco.exec&lt;/code&gt; in the working directory.
+	 */
+	public static final String DESTFILE = &quot;destfile&quot;;
+
+	/**
+	 * Specifies whether execution data should be appended to the output file.
+	 * Default is &lt;code&gt;true&lt;/code&gt;.
+	 */
+	public static final String APPEND = &quot;append&quot;;
+
+	/**
+	 * Wildcard expression for class names that should be included for code
+	 * coverage. Default is &lt;code&gt;*&lt;/code&gt; (all classes included).
+	 * 
+	 * @see WildcardMatcher
+	 */
+	public static final String INCLUDES = &quot;includes&quot;;
+
+	/**
+	 * Wildcard expression for class names that should be excluded from code
+	 * coverage. Default is the empty string (no exclusions).
+	 * 
+	 * @see WildcardMatcher
+	 */
+	public static final String EXCLUDES = &quot;excludes&quot;;
+
+	/**
+	 * Wildcard expression for class loaders names for classes that should be
+	 * excluded from code coverage. This means all classes loaded by a class
+	 * loader which full qualified name matches this expression will be ignored
+	 * for code coverage regardless of all other filtering settings. Default is
+	 * &lt;code&gt;sun.reflect.DelegatingClassLoader&lt;/code&gt;.
+	 * 
+	 * @see WildcardMatcher
+	 */
+	public static final String EXCLCLASSLOADER = &quot;exclclassloader&quot;;
+
+	/**
+	 * Specifies a session identifier that is written with the execution data.
+	 * Without this parameter a random identifier is created by the agent.
+	 */
+	public static final String SESSIONID = &quot;sessionid&quot;;
+
+	/**
+	 * Specifies whether the agent will automatically dump coverage data on VM
+	 * exit. Default is &lt;code&gt;true&lt;/code&gt;.
+	 */
+	public static final String DUMPONEXIT = &quot;dumponexit&quot;;
+
+	/**
+	 * Specifies the output mode. Default is
+	 * &lt;code&gt;{@link OutputMode#file}&lt;/code&gt;.
+	 * 
+	 * @see OutputMode#file
+	 * @see OutputMode#tcpserver
+	 * @see OutputMode#tcpclient
+	 */
+	public static final String OUTPUT = &quot;output&quot;;
+
+	/**
+	 * Possible values for {@link AgentOptions#OUTPUT}.
+	 */
+<span class="fc" id="L96">	public static enum OutputMode {</span>
+
+<span class="fc" id="L98">		/**</span>
+		 * Value for the {@link AgentOptions#OUTPUT} parameter: At VM
+		 * termination execution data is written to the file specified by
+		 * {@link AgentOptions#DESTFILE}.
+		 */
+<span class="fc" id="L103">		file,</span>
+
+<span class="fc" id="L105">		/**</span>
+		 * Value for the {@link AgentOptions#OUTPUT} parameter: The agent
+		 * listens for incoming connections on a TCP port specified by
+		 * {@link AgentOptions#ADDRESS} and {@link AgentOptions#PORT}.
+		 */
+<span class="fc" id="L110">		tcpserver,</span>
+
+<span class="fc" id="L112">		/**</span>
+		 * Value for the {@link AgentOptions#OUTPUT} parameter: At startup the
+		 * agent connects to a TCP port specified by the
+		 * {@link AgentOptions#ADDRESS} and {@link AgentOptions#PORT} attribute.
+		 */
+<span class="fc" id="L117">		tcpclient,</span>
+
+<span class="fc" id="L119">		/**</span>
+		 * Value for the {@link AgentOptions#OUTPUT} parameter: At startup the
+		 * agent creates MBean.
+		 */
+<span class="fc" id="L123">		mbean</span>
+
+	}
+
+	/**
+	 * The IP address or DNS name the tcpserver binds to or the tcpclient
+	 * connects to. Default is defined by {@link #DEFAULT_ADDRESS}.
+	 */
+	public static final String ADDRESS = &quot;address&quot;;
+
+	/**
+	 * Default value for the &quot;address&quot; agent option.
+	 */
+<span class="fc" id="L136">	public static final String DEFAULT_ADDRESS = null;</span>
+
+	/**
+	 * The port the tcpserver binds to or the tcpclient connects to. In
+	 * tcpserver mode the port must be available, which means that if multiple
+	 * JaCoCo agents should run on the same machine, different ports have to be
+	 * specified. Default is defined by {@link #DEFAULT_PORT}.
+	 */
+	public static final String PORT = &quot;port&quot;;
+
+	/**
+	 * Default value for the &quot;port&quot; agent option.
+	 */
+	public static final int DEFAULT_PORT = 6300;
+
+<span class="fc" id="L151">	private static final Collection&lt;String&gt; VALID_OPTIONS = Arrays.asList(</span>
+<span class="fc" id="L152">			DESTFILE, APPEND, INCLUDES, EXCLUDES, EXCLCLASSLOADER, SESSIONID,</span>
+<span class="fc" id="L153">			DUMPONEXIT, OUTPUT, ADDRESS, PORT);</span>
+
+	private final Map&lt;String, String&gt; options;
+
+	/**
+	 * New instance with all values set to default.
+	 */
+<span class="fc" id="L160">	public AgentOptions() {</span>
+<span class="fc" id="L161">		this.options = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L162">	}</span>
+
+	/**
+	 * New instance parsed from the given option string.
+	 * 
+	 * @param optionstr
+	 *            string to parse or &lt;code&gt;null&lt;/code&gt;
+	 */
+	public AgentOptions(final String optionstr) {
+<span class="fc" id="L171">		this();</span>
+<span class="fc bfc" id="L172" title="All 4 branches covered.">		if (optionstr != null &amp;&amp; optionstr.length() &gt; 0) {</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">			for (final String entry : optionstr.split(&quot;,&quot;)) {</span>
+<span class="fc" id="L174">				final int pos = entry.indexOf('=');</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">				if (pos == -1) {</span>
+<span class="fc" id="L176">					throw new IllegalArgumentException(format(</span>
+<span class="fc" id="L177">							&quot;Invalid agent option syntax \&quot;%s\&quot;.&quot;, optionstr));</span>
+				}
+<span class="fc" id="L179">				final String key = entry.substring(0, pos);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">				if (!VALID_OPTIONS.contains(key)) {</span>
+<span class="fc" id="L181">					throw new IllegalArgumentException(format(</span>
+<span class="fc" id="L182">							&quot;Unknown agent option \&quot;%s\&quot;.&quot;, key));</span>
+				}
+
+<span class="fc" id="L185">				final String value = entry.substring(pos + 1);</span>
+<span class="fc" id="L186">				setOption(key, value);</span>
+			}
+
+<span class="fc" id="L189">			validateAll();</span>
+		}
+<span class="fc" id="L191">	}</span>
+
+	private void validateAll() {
+<span class="fc" id="L194">		validatePort(getPort());</span>
+<span class="fc" id="L195">		getOutput();</span>
+<span class="fc" id="L196">	}</span>
+
+	private void validatePort(final int port) {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (port &lt; 0) {</span>
+<span class="fc" id="L200">			throw new IllegalArgumentException(&quot;port must be positive&quot;);</span>
+		}
+<span class="fc" id="L202">	}</span>
+
+	/**
+	 * Returns the output file location.
+	 * 
+	 * @return output file location
+	 */
+	public String getDestfile() {
+<span class="fc" id="L210">		return getOption(DESTFILE, &quot;jacoco.exec&quot;);</span>
+	}
+
+	/**
+	 * Sets the output file location.
+	 * 
+	 * @param destfile
+	 *            output file location
+	 */
+	public void setDestfile(final String destfile) {
+<span class="fc" id="L220">		setOption(DESTFILE, destfile);</span>
+<span class="fc" id="L221">	}</span>
+
+	/**
+	 * Returns whether the output should be appended to an existing file.
+	 * 
+	 * @return &lt;code&gt;true&lt;/code&gt;, when the output should be appended
+	 */
+	public boolean getAppend() {
+<span class="fc" id="L229">		return getOption(APPEND, true);</span>
+	}
+
+	/**
+	 * Sets whether the output should be appended to an existing file.
+	 * 
+	 * @param append
+	 *            &lt;code&gt;true&lt;/code&gt;, when the output should be appended
+	 */
+	public void setAppend(final boolean append) {
+<span class="fc" id="L239">		setOption(APPEND, append);</span>
+<span class="fc" id="L240">	}</span>
+
+	/**
+	 * Returns the wildcard expression for classes to include.
+	 * 
+	 * @return wildcard expression for classes to include
+	 * @see WildcardMatcher
+	 */
+	public String getIncludes() {
+<span class="fc" id="L249">		return getOption(INCLUDES, &quot;*&quot;);</span>
+	}
+
+	/**
+	 * Sets the wildcard expression for classes to include.
+	 * 
+	 * @param includes
+	 *            wildcard expression for classes to include
+	 * @see WildcardMatcher
+	 */
+	public void setIncludes(final String includes) {
+<span class="fc" id="L260">		setOption(INCLUDES, includes);</span>
+<span class="fc" id="L261">	}</span>
+
+	/**
+	 * Returns the wildcard expression for classes to exclude.
+	 * 
+	 * @return wildcard expression for classes to exclude
+	 * @see WildcardMatcher
+	 */
+	public String getExcludes() {
+<span class="fc" id="L270">		return getOption(EXCLUDES, &quot;&quot;);</span>
+	}
+
+	/**
+	 * Sets the wildcard expression for classes to exclude.
+	 * 
+	 * @param excludes
+	 *            wildcard expression for classes to exclude
+	 * @see WildcardMatcher
+	 */
+	public void setExcludes(final String excludes) {
+<span class="fc" id="L281">		setOption(EXCLUDES, excludes);</span>
+<span class="fc" id="L282">	}</span>
+
+	/**
+	 * Returns the wildcard expression for excluded class loaders.
+	 * 
+	 * @return expression for excluded class loaders
+	 * @see WildcardMatcher
+	 */
+	public String getExclClassloader() {
+<span class="fc" id="L291">		return getOption(EXCLCLASSLOADER, &quot;sun.reflect.DelegatingClassLoader&quot;);</span>
+	}
+
+	/**
+	 * Sets the wildcard expression for excluded class loaders.
+	 * 
+	 * @param expression
+	 *            expression for excluded class loaders
+	 * @see WildcardMatcher
+	 */
+	public void setExclClassloader(final String expression) {
+<span class="fc" id="L302">		setOption(EXCLCLASSLOADER, expression);</span>
+<span class="fc" id="L303">	}</span>
+
+	/**
+	 * Returns the session identifier.
+	 * 
+	 * @return session identifier
+	 */
+	public String getSessionId() {
+<span class="fc" id="L311">		return getOption(SESSIONID, null);</span>
+	}
+
+	/**
+	 * Sets the session identifier.
+	 * 
+	 * @param id
+	 *            session identifier
+	 */
+	public void setSessionId(final String id) {
+<span class="fc" id="L321">		setOption(SESSIONID, id);</span>
+<span class="fc" id="L322">	}</span>
+
+	/**
+	 * Returns whether coverage data should be dumped on exit
+	 * 
+	 * @return &lt;code&gt;true&lt;/code&gt; if coverage data will be written on VM exit
+	 */
+	public boolean getDumpOnExit() {
+<span class="fc" id="L330">		return getOption(DUMPONEXIT, true);</span>
+	}
+
+	/**
+	 * Sets whether coverage data should be dumped on exit
+	 * 
+	 * @param dumpOnExit
+	 *            &lt;code&gt;true&lt;/code&gt; if coverage data should be written on VM
+	 *            exit
+	 */
+	public void setDumpOnExit(final boolean dumpOnExit) {
+<span class="fc" id="L341">		setOption(DUMPONEXIT, dumpOnExit);</span>
+<span class="fc" id="L342">	}</span>
+
+	/**
+	 * Returns the port on which to listen to when the output is
+	 * &lt;code&gt;tcpserver&lt;/code&gt; or the port to connect to when output is
+	 * &lt;code&gt;tcpclient&lt;/code&gt;.
+	 * 
+	 * @return port to listen on or connect to
+	 */
+	public int getPort() {
+<span class="fc" id="L352">		return getOption(PORT, DEFAULT_PORT);</span>
+	}
+
+	/**
+	 * Sets the port on which to listen to when output is &lt;code&gt;tcpserver&lt;/code&gt;
+	 * or the port to connect to when output is &lt;code&gt;tcpclient&lt;/code&gt;
+	 * 
+	 * @param port
+	 */
+	public void setPort(final int port) {
+<span class="fc" id="L362">		validatePort(port);</span>
+<span class="fc" id="L363">		setOption(PORT, port);</span>
+<span class="fc" id="L364">	}</span>
+
+	/**
+	 * Gets the hostname or IP address to listen to when output is
+	 * &lt;code&gt;tcpserver&lt;/code&gt; or connect to when output is
+	 * &lt;code&gt;tcpclient&lt;/code&gt;
+	 * 
+	 * @return Hostname or IP address
+	 */
+	public String getAddress() {
+<span class="fc" id="L374">		return getOption(ADDRESS, DEFAULT_ADDRESS);</span>
+	}
+
+	/**
+	 * Sets the hostname or IP address to listen to when output is
+	 * &lt;code&gt;tcpserver&lt;/cose&gt; or connect to when output is &lt;code&gt;tcpclient&lt;/code&gt;
+	 * 
+	 * @param address
+	 *            Hostname or IP address
+	 */
+	public void setAddress(final String address) {
+<span class="fc" id="L385">		setOption(ADDRESS, address);</span>
+<span class="fc" id="L386">	}</span>
+
+	/**
+	 * Returns the output mode
+	 * 
+	 * @return current output mode
+	 */
+	public OutputMode getOutput() {
+<span class="fc" id="L394">		final String value = options.get(OUTPUT);</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">		return value == null ? OutputMode.file : OutputMode.valueOf(value);</span>
+	}
+
+	/**
+	 * Sets the output mode
+	 * 
+	 * @param output
+	 *            Output mode
+	 */
+	public void setOutput(final String output) {
+<span class="fc" id="L405">		setOutput(OutputMode.valueOf(output));</span>
+<span class="fc" id="L406">	}</span>
+
+	/**
+	 * Sets the output mode
+	 * 
+	 * @param output
+	 *            Output mode
+	 */
+	public void setOutput(final OutputMode output) {
+<span class="fc" id="L415">		setOption(OUTPUT, output.name());</span>
+<span class="fc" id="L416">	}</span>
+
+	private void setOption(final String key, final int value) {
+<span class="fc" id="L419">		setOption(key, Integer.toString(value));</span>
+<span class="fc" id="L420">	}</span>
+
+	private void setOption(final String key, final boolean value) {
+<span class="fc" id="L423">		setOption(key, Boolean.toString(value));</span>
+<span class="fc" id="L424">	}</span>
+
+	private void setOption(final String key, final String value) {
+<span class="fc bfc" id="L427" title="All 2 branches covered.">		if (value.contains(&quot;,&quot;)) {</span>
+<span class="fc" id="L428">			throw new IllegalArgumentException(format(</span>
+<span class="fc" id="L429">					&quot;Invalid character in option argument \&quot;%s\&quot;&quot;, value));</span>
+		}
+<span class="fc" id="L431">		options.put(key, value);</span>
+<span class="fc" id="L432">	}</span>
+
+	private String getOption(final String key, final String defaultValue) {
+<span class="fc" id="L435">		final String value = options.get(key);</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">		return value == null ? defaultValue : value;</span>
+	}
+
+	private boolean getOption(final String key, final boolean defaultValue) {
+<span class="fc" id="L440">		final String value = options.get(key);</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">		return value == null ? defaultValue : Boolean.parseBoolean(value);</span>
+	}
+
+	private int getOption(final String key, final int defaultValue) {
+<span class="fc" id="L445">		final String value = options.get(key);</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">		return value == null ? defaultValue : Integer.parseInt(value);</span>
+	}
+
+	/**
+	 * Generate required JVM argument string based on current configuration and
+	 * supplied agent jar location
+	 * 
+	 * @param agentJarFile
+	 *            location of the JaCoCo Agent Jar
+	 * @return Argument to pass to create new VM with coverage enabled
+	 */
+	public String getVMArgument(final File agentJarFile) {
+<span class="fc" id="L458">		return format(&quot;-javaagent:%s=%s&quot;, agentJarFile, this);</span>
+	}
+
+	/**
+	 * Creates a string representation that can be passed to the agent via the
+	 * command line. Might be the empty string, if no options are set.
+	 */
+	@Override
+	public String toString() {
+<span class="fc" id="L467">		final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">		for (final String key : VALID_OPTIONS) {</span>
+<span class="fc" id="L469">			final String value = options.get(key);</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">			if (value != null) {</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">				if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L472">					sb.append(',');</span>
+				}
+<span class="fc" id="L474">				sb.append(key).append('=').append(value);</span>
+			}
+		}
+<span class="fc" id="L477">		return sb.toString();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.5.6.201201232323</span>Code Coverage Report for JaCoCo 0.5.6.201201232323</div></body></html>

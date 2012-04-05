@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../.resources/report.gif" type="image/gif"/><title>ClassInstrumenter.java</title><link rel="stylesheet" href="../../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../../.sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">JaCoCo</a> &gt; <a href="../index.html" class="el_bundle">org.jacoco.core</a> &gt; <a href="index.html" class="el_package">org.jacoco.core.internal.instr</a> &gt; <span class="el_source">ClassInstrumenter.java</span></div><h1>ClassInstrumenter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2009, 2012 Mountainminds GmbH &amp; Co. KG and Contributors
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Marc R. Hoffmann - initial API and implementation
+ *    
+ *******************************************************************************/
+package org.jacoco.core.internal.instr;
+
+import static java.lang.String.format;
+
+import org.jacoco.core.internal.flow.IClassProbesVisitor;
+import org.jacoco.core.internal.flow.IMethodProbesVisitor;
+import org.jacoco.core.runtime.IExecutionDataAccessorGenerator;
+import org.objectweb.asm.ClassAdapter;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
+/**
+ * Adapter that instruments a class for coverage tracing.
+ */
+<span class="fc" id="L29">public class ClassInstrumenter extends ClassAdapter implements</span>
+		IClassProbesVisitor {
+
+<span class="fc" id="L32">	private static final Object[] STACK_ARRZ = new Object[] { InstrSupport.DATAFIELD_DESC };</span>
+<span class="fc" id="L33">	private static final Object[] NO_LOCALS = new Object[0];</span>
+
+	private final long id;
+
+	private final IExecutionDataAccessorGenerator accessorGenerator;
+
+	private IProbeArrayStrategy probeArrayStrategy;
+
+	private String className;
+
+	private boolean withFrames;
+
+	private int probeCount;
+
+	/**
+	 * Emits a instrumented version of this class to the given class visitor.
+	 * 
+	 * @param id
+	 *            unique identifier given to this class
+	 * @param accessorGenerator
+	 *            this generator will be used for instrumentation
+	 * @param cv
+	 *            next delegate in the visitor chain will receive the
+	 *            instrumented class
+	 */
+	public ClassInstrumenter(final long id,
+			final IExecutionDataAccessorGenerator accessorGenerator,
+			final ClassVisitor cv) {
+<span class="fc" id="L61">		super(cv);</span>
+<span class="fc" id="L62">		this.id = id;</span>
+<span class="fc" id="L63">		this.accessorGenerator = accessorGenerator;</span>
+<span class="fc" id="L64">	}</span>
+
+	@Override
+	public void visit(final int version, final int access, final String name,
+			final String signature, final String superName,
+			final String[] interfaces) {
+<span class="fc" id="L70">		this.className = name;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		withFrames = (version &amp; 0xff) &gt;= Opcodes.V1_6;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if ((access &amp; Opcodes.ACC_INTERFACE) == 0) {</span>
+<span class="fc" id="L73">			this.probeArrayStrategy = new ClassTypeStrategy();</span>
+		} else {
+<span class="fc" id="L75">			this.probeArrayStrategy = new InterfaceTypeStrategy();</span>
+		}
+<span class="fc" id="L77">		super.visit(version, access, name, signature, superName, interfaces);</span>
+<span class="fc" id="L78">	}</span>
+
+	@Override
+	public FieldVisitor visitField(final int access, final String name,
+			final String desc, final String signature, final Object value) {
+<span class="fc" id="L83">		assertNotInstrumented(name, InstrSupport.DATAFIELD_NAME);</span>
+<span class="fc" id="L84">		return super.visitField(access, name, desc, signature, value);</span>
+	}
+
+	@Override
+	public IMethodProbesVisitor visitMethod(final int access,
+			final String name, final String desc, final String signature,
+			final String[] exceptions) {
+
+<span class="fc" id="L92">		assertNotInstrumented(name, InstrSupport.INITMETHOD_NAME);</span>
+
+<span class="fc" id="L94">		final MethodVisitor mv = super.visitMethod(access, name, desc,</span>
+<span class="fc" id="L95">				signature, exceptions);</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (mv == null) {</span>
+<span class="fc" id="L98">			return null;</span>
+		}
+<span class="fc" id="L100">		return new MethodInstrumenter(mv, access, desc, probeArrayStrategy);</span>
+	}
+
+	public void visitTotalProbeCount(final int count) {
+<span class="fc" id="L104">		probeCount = count;</span>
+<span class="fc" id="L105">	}</span>
+
+	@Override
+	public void visitEnd() {
+<span class="fc" id="L109">		probeArrayStrategy.addMembers(cv);</span>
+<span class="fc" id="L110">		super.visitEnd();</span>
+<span class="fc" id="L111">	}</span>
+
+	/**
+	 * Ensures that the given member does not correspond to a internal member
+	 * created by the instrumentation process. This would mean that the class
+	 * has been instrumented twice.
+	 * 
+	 * @param member
+	 *            name of the member to check
+	 * @param instrMember
+	 *            name of a instrumentation member
+	 * @throws IllegalStateException
+	 *             thrown if the member has the same name than the
+	 *             instrumentation member
+	 */
+	private void assertNotInstrumented(final String member,
+			final String instrMember) throws IllegalStateException {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		if (member.equals(instrMember)) {</span>
+<span class="fc" id="L129">			throw new IllegalStateException(format(</span>
+<span class="fc" id="L130">					&quot;Class %s is already instrumented.&quot;, className));</span>
+		}
+<span class="fc" id="L132">	}</span>
+
+	// === probe array strategies ===
+
+<span class="fc" id="L136">	private class ClassTypeStrategy implements IProbeArrayStrategy {</span>
+
+		public int pushInstance(final MethodVisitor mv) {
+<span class="fc" id="L139">			mv.visitMethodInsn(Opcodes.INVOKESTATIC, className,</span>
+<span class="fc" id="L140">					InstrSupport.INITMETHOD_NAME, InstrSupport.INITMETHOD_DESC);</span>
+<span class="fc" id="L141">			return 1;</span>
+		}
+
+		public void addMembers(final ClassVisitor delegate) {
+<span class="fc" id="L145">			createDataField();</span>
+<span class="fc" id="L146">			createInitMethod(probeCount);</span>
+<span class="fc" id="L147">		}</span>
+
+		private void createDataField() {
+<span class="fc" id="L150">			cv.visitField(InstrSupport.DATAFIELD_ACC,</span>
+<span class="fc" id="L151">					InstrSupport.DATAFIELD_NAME, InstrSupport.DATAFIELD_DESC,</span>
+<span class="fc" id="L152">					null, null);</span>
+<span class="fc" id="L153">		}</span>
+
+		private void createInitMethod(final int probeCount) {
+<span class="fc" id="L156">			final MethodVisitor mv = cv.visitMethod(</span>
+<span class="fc" id="L157">					InstrSupport.INITMETHOD_ACC, InstrSupport.INITMETHOD_NAME,</span>
+<span class="fc" id="L158">					InstrSupport.INITMETHOD_DESC, null, null);</span>
+<span class="fc" id="L159">			mv.visitCode();</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (withFrames) {</span>
+<span class="fc" id="L161">				mv.visitFrame(Opcodes.F_NEW, 0, NO_LOCALS, 0, STACK_ARRZ);</span>
+			}
+
+			// Load the value of the static data field:
+<span class="fc" id="L165">			mv.visitFieldInsn(Opcodes.GETSTATIC, className,</span>
+<span class="fc" id="L166">					InstrSupport.DATAFIELD_NAME, InstrSupport.DATAFIELD_DESC);</span>
+<span class="fc" id="L167">			mv.visitInsn(Opcodes.DUP);</span>
+
+			// Stack[1]: [Z
+			// Stack[0]: [Z
+
+			// Skip initialization when we already have a data array:
+<span class="fc" id="L173">			final Label alreadyInitialized = new Label();</span>
+<span class="fc" id="L174">			mv.visitJumpInsn(Opcodes.IFNONNULL, alreadyInitialized);</span>
+
+			// Stack[0]: [Z
+
+<span class="fc" id="L178">			mv.visitInsn(Opcodes.POP);</span>
+<span class="fc" id="L179">			final int size = genInitializeDataField(mv, probeCount);</span>
+
+			// Stack[0]: [Z
+
+			// Return the class' probe array:
+<span class="fc bfc" id="L184" title="All 2 branches covered.">			if (withFrames) {</span>
+<span class="fc" id="L185">				mv.visitFrame(Opcodes.F_NEW, 0, NO_LOCALS, 1, STACK_ARRZ);</span>
+			}
+<span class="fc" id="L187">			mv.visitLabel(alreadyInitialized);</span>
+<span class="fc" id="L188">			mv.visitInsn(Opcodes.ARETURN);</span>
+
+<span class="fc" id="L190">			mv.visitMaxs(Math.max(size, 2), 0); // Maximum local stack size is 2</span>
+<span class="fc" id="L191">			mv.visitEnd();</span>
+<span class="fc" id="L192">		}</span>
+
+		/**
+		 * Generates the byte code to initialize the static coverage data field
+		 * within this class.
+		 * 
+		 * The code will push the [Z data array on the operand stack.
+		 * 
+		 * @param mv
+		 *            generator to emit code to
+		 */
+		private int genInitializeDataField(final MethodVisitor mv,
+				final int probeCount) {
+<span class="fc" id="L205">			final int size = accessorGenerator.generateDataAccessor(id,</span>
+<span class="fc" id="L206">					className, probeCount, mv);</span>
+
+			// Stack[0]: [Z
+
+<span class="fc" id="L210">			mv.visitInsn(Opcodes.DUP);</span>
+
+			// Stack[1]: [Z
+			// Stack[0]: [Z
+
+<span class="fc" id="L215">			mv.visitFieldInsn(Opcodes.PUTSTATIC, className,</span>
+<span class="fc" id="L216">					InstrSupport.DATAFIELD_NAME, InstrSupport.DATAFIELD_DESC);</span>
+
+			// Stack[0]: [Z
+
+<span class="fc" id="L220">			return Math.max(size, 2); // Maximum local stack size is 2</span>
+		}
+	}
+
+<span class="fc" id="L224">	private class InterfaceTypeStrategy implements IProbeArrayStrategy {</span>
+
+		public int pushInstance(final MethodVisitor mv) {
+<span class="fc" id="L227">			return accessorGenerator.generateDataAccessor(id, className,</span>
+<span class="fc" id="L228">					probeCount, mv);</span>
+		}
+
+		public void addMembers(final ClassVisitor delegate) {
+			// nothing to do
+<span class="fc" id="L233">		}</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.5.6.201201232323</span>Code Coverage Report for JaCoCo 0.5.6.201201232323</div></body></html>
