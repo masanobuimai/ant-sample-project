@@ -40,4 +40,17 @@
     <include name="**/*.txt"/>
   </patternset>
 
+  <!-- cobertura関係の設定 -->
+  <property name="cobertura.home" value="${tool.dir}/cobertura-1.9.4.1" />
+  <property name="dest.instrument.dir" value="${dest.dir}/classes/instrumented" />
+
+  <path id="cobertura.classpath">
+    <fileset dir="${cobertura.home}">
+      <include name="cobertura.jar" />
+      <include name="lib/**/*.jar" />
+    </fileset>
+  </path>
+
+  <taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+
 </project>

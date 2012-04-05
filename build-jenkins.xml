@@ -5,6 +5,7 @@
 
   <target name="clean" description="クリーンアップ">
     <delete dir="${dest.dir}" />
+    <delete file="cobertura.ser" />
   </target>
 
 
@@ -29,6 +30,17 @@
        <src path="${src.java.dir}" />
       <classpath refid="base.classpath" />
     </javac>
+  </target>
+
+
+  <target name="instrument" depends="compile-main">
+    <delete file="cobertura.ser" />
+    <delete dir="${dest.instrument.dir}" />
+    <cobertura-instrument todir="${dest.instrument.dir}">
+      <fileset dir="${dest.java.dir}">
+        <include name="**/*.class" />
+      </fileset>
+    </cobertura-instrument>
   </target>
 
 
@@ -60,20 +72,29 @@
   </target>
 
 
-  <target name="test" depends="compile-test" description="テストの実行">
+  <target name="test" depends="instrument, compile-test" description="テストの実行">
     <delete dir="${result.test.dir}" />
     <mkdir dir="${result.test.dir}" />
 
     <junit fork="on" printsummary="on" maxmemory="256m">
       <classpath location="${dest.test.dir}" />
-      <classpath location="${dest.java.dir}" />
+      <classpath location="${dest.instrument.dir}" />
       <classpath refid="test.classpath" />
+      <classpath refid="cobertura.classpath" />
 
       <formatter type="xml" />
       <batchtest todir="${result.test.dir}">
         <fileset dir="${dest.test.dir}" includes="**/*Test.class" />
       </batchtest>
     </junit>
+
+    <!-- カバレッジレポートの生成 -->
+    <cobertura-report format="xml" destdir="${result.dir}"
+                      encoding="utf-8" maxmemory="256m">
+      <fileset dir="${src.java.dir}">
+        <include name="**/*.java" />
+      </fileset>
+    </cobertura-report>
   </target>
 
 
@@ -119,7 +140,9 @@
     </findbugs>
   </target>
 
+
   <target name="inspection" depends="checkstyle, findbugs" description="インスペクション">
   </target>
+
 
 </project>
