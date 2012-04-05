@@ -15,7 +15,7 @@
   <property name="result.dir" value="${dest.dir}/result" />
   <property name="result.test.dir" value="${result.dir}/test" />
 
-  <property name="lib.compile.dir" value="${src.web.dir}/WEB-INF/lib" />
+  <property name="lib.compile.dir" value="lib/compile" />
   <property name="lib.provided.dir" value="lib/provided" />
   <property name="lib.test.dir" value="lib/test" />
 

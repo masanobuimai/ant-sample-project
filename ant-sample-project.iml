@@ -27,7 +27,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="provided" level="project" />
     <orderEntry type="library" scope="TEST" name="test" level="project" />
-    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="compile" level="project" />
   </component>
 </module>
 

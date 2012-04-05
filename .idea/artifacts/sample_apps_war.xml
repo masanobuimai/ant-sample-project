@@ -6,6 +6,9 @@
         <element id="directory" name="classes">
           <element id="module-output" name="ant-sample-project" />
         </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="compile" />
+        </element>
       </element>
       <element id="javaee-facet-resources" facet="ant-sample-project/web/Web" />
     </root>
