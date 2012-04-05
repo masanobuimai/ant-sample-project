@@ -10,6 +10,8 @@
   <target name="prepare">
     <mkdir dir="${dest.dir}" />
     <mkdir dir="${dest.java.dir}" />
+    <mkdir dir="${dest.test.dir}" />
+    <mkdir dir="${result.dir}" />
   </target>
 
 
@@ -20,7 +22,6 @@
          <patternset refid="resource"/>
        </fileset>
     </copy>
-
     <javac destdir="${dest.java.dir}" debug="on" debuglevel="lines,vars,source"
            optimize="off" deprecation="on" encoding="utf-8"
            includeAntRuntime="off">
@@ -36,7 +37,7 @@
          webxml="${src.web.dir}/WEB-INF/web.xml">
       <classes dir="${dest.java.dir}" />
       <lib file="${lib.compile.dir}/*.jar" />
-      <fileset dir="${src.web.dir}" excludes="**/web.xml,WEB-INF/lib/**" />
+      <fileset dir="${src.web.dir}" excludes="**/web.xml" />
     </war>
   </target>
 
@@ -49,12 +50,47 @@
   </target>
 
 
-  <target name="release" depends="clean, build-webapps, javadoc"
+  <target name="compile-test" depends="compile-main">
+    <!-- リソースのコピー -->
+    <copy todir="${dest.test.dir}">
+       <fileset dir="${src.test.dir}">
+         <patternset refid="resource"/>
+       </fileset>
+    </copy>
+    <javac destdir="${dest.test.dir}" debug="on" debuglevel="lines,vars,source"
+           optimize="off" deprecation="on" encoding="utf-8"
+           includeAntRuntime="off">
+      <src path="${src.test.dir}" />
+      <classpath refid="test.classpath" />
+      <classpath location="${dest.java.dir}" />
+    </javac>
+  </target>
+
+
+  <target name="test" depends="compile-test" description="テストの実行">
+    <delete dir="${result.test.dir}" />
+    <mkdir dir="${result.test.dir}" />
+
+    <junit fork="on" printsummary="on" maxmemory="256m">
+      <classpath location="${dest.test.dir}" />
+      <classpath location="${dest.java.dir}" />
+      <classpath refid="test.classpath" />
+
+      <formatter type="xml" />
+      <batchtest todir="${result.test.dir}">
+        <fileset dir="${dest.test.dir}"/>
+      </batchtest>
+    </junit>
+  </target>
+
+
+  <target name="release" depends="clean, test, build-webapps, javadoc"
                          description="リリースモジュールの作成">
     <zip destfile="${dest.dir}/${ant.project.name}.zip">
       <fileset file="${dest.dir}/${ant.project.name}.war"/>
       <zipfileset dir="${dest.javadoc.dir}" prefix="javadoc"/>
     </zip>
   </target>
+
 
 </project>
