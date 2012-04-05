@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="sample-apps" default="build-webapps" basedir=".">
+  <import file="build-common.xml"/>
+
+  <target name="clean" description="クリーンアップ">
+    <delete dir="${dest.dir}" />
+  </target>
+
+
+  <target name="prepare">
+    <mkdir dir="${dest.dir}" />
+    <mkdir dir="${dest.java.dir}" />
+  </target>
+
+
+  <target name="compile-main" depends="prepare">
+    <!-- リソースのコピー -->
+    <copy todir="${dest.java.dir}">
+       <fileset dir="${src.java.dir}">
+         <patternset refid="resource"/>
+       </fileset>
+    </copy>
+
+    <javac destdir="${dest.java.dir}" debug="on" debuglevel="lines,vars,source"
+           optimize="off" deprecation="on" encoding="utf-8"
+           includeAntRuntime="off">
+      <src path="${src.java.dir}" />
+      <classpath refid="base.classpath" />
+    </javac>
+  </target>
+
+
+  <target name="build-webapps" description="WARファイルの作成" depends="compile-main">
+    <war destfile="${dest.dir}/${ant.project.name}.war"
+         update="true" duplicate="preserve"
+         webxml="${src.web.dir}/WEB-INF/web.xml">
+      <classes dir="${dest.java.dir}" />
+      <lib file="${lib.compile.dir}/*.jar" />
+      <fileset dir="${src.web.dir}" excludes="**/web.xml,WEB-INF/lib/**" />
+    </war>
+  </target>
+
+
+  <target name="javadoc" depends="prepare" description="Javadocの作成">
+    <javadoc sourcepath="${src.java.dir}" destdir="${dest.javadoc.dir}"
+             packagenames="com.example.*"
+             classpathref="base.classpath"
+             encoding="utf-8" />
+  </target>
+
+
+  <target name="release" depends="clean, build-webapps, javadoc"
+                         description="リリースモジュールの作成">
+    <zip destfile="${dest.dir}/${ant.project.name}.zip">
+      <fileset file="${dest.dir}/${ant.project.name}.war"/>
+      <zipfileset dir="${dest.javadoc.dir}" prefix="javadoc"/>
+    </zip>
+  </target>
+
+</project>
