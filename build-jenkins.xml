@@ -2,6 +2,7 @@
 <project name="sample-apps" default="build-webapps" basedir=".">
   <import file="build-common.xml"/>
 
+
   <target name="clean" description="クリーンアップ">
     <delete dir="${dest.dir}" />
   </target>
@@ -25,7 +26,7 @@
     <javac destdir="${dest.java.dir}" debug="on" debuglevel="lines,vars,source"
            optimize="off" deprecation="on" encoding="utf-8"
            includeAntRuntime="off">
-      <src path="${src.java.dir}" />
+       <src path="${src.java.dir}" />
       <classpath refid="base.classpath" />
     </javac>
   </target>
@@ -39,14 +40,6 @@
       <lib file="${lib.compile.dir}/*.jar" />
       <fileset dir="${src.web.dir}" excludes="**/web.xml" />
     </war>
-  </target>
-
-
-  <target name="javadoc" depends="prepare" description="Javadocの作成">
-    <javadoc sourcepath="${src.java.dir}" destdir="${dest.javadoc.dir}"
-             packagenames="com.example.*"
-             classpathref="base.classpath"
-             encoding="utf-8" />
   </target>
 
 
@@ -78,9 +71,17 @@
 
       <formatter type="xml" />
       <batchtest todir="${result.test.dir}">
-        <fileset dir="${dest.test.dir}"/>
+        <fileset dir="${dest.test.dir}" includes="**/*Test.class" />
       </batchtest>
     </junit>
+  </target>
+
+
+  <target name="javadoc" depends="prepare" description="Javadocの作成">
+    <javadoc sourcepath="${src.java.dir}" destdir="${dest.javadoc.dir}"
+             packagenames="com.example.*"
+             classpathref="base.classpath"
+             encoding="utf-8" />
   </target>
 
 
@@ -92,5 +93,33 @@
     </zip>
   </target>
 
+
+  <target name="checkstyle" depends="prepare">
+    <property name="checkstyle.home" value="${tool.dir}/checkstyle-5.1" />
+    <taskdef resource="checkstyletask.properties"
+             classpath="${checkstyle.home}/checkstyle-all-5.1.jar"/>
+      <checkstyle config="${checkstyle.home}/sun_checks.xml" failOnViolation="no">
+      <fileset dir="${src.java.dir}" includes="**/*.java"/>
+      <formatter type="xml" toFile="${result.dir}/checkstyle-result.xml"/>
+    </checkstyle>
+  </target>
+
+
+  <target name="findbugs" depends="compile-main">
+    <property name="findbugs.home" value="${tool.dir}/findbugs-1.3.9" />
+    <taskdef name="findbugs"
+             classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
+             classpath="${findbugs.home}/lib/findbugs-ant.jar"/>
+
+    <findbugs home="${findbugs.home}"
+              output="xml"
+              outputFile="${result.dir}/findbugs-result.xml" >
+      <sourcePath path="${src.java.dir}" />
+      <class location="${dest.java.dir}" />
+    </findbugs>
+  </target>
+
+  <target name="inspection" depends="checkstyle, findbugs" description="インスペクション">
+  </target>
 
 </project>

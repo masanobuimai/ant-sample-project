@@ -19,6 +19,8 @@
   <property name="lib.provided.dir" value="lib/provided" />
   <property name="lib.test.dir" value="lib/test" />
 
+  <property name="tool.dir" value="tool" />
+
   <!-- ベースとなるCLASSPATH -->
   <path id="base.classpath">
     <fileset dir="${lib.compile.dir}" includes="*.jar" />
