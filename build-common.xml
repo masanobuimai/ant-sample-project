@@ -29,6 +29,7 @@
 
   <!-- ベースとなるCLASSPATH（テスト用） -->
   <path id="test.classpath">
+    <pathelement path="${dest.java.dir}" />
     <fileset dir="${lib.compile.dir}" includes="*.jar" />
     <fileset dir="${lib.provided.dir}" includes="*.jar" />
     <fileset dir="${lib.test.dir}" includes="*.jar" />
@@ -39,5 +40,28 @@
     <include name="**/*.properties"/>
     <include name="**/*.txt"/>
   </patternset>
+
+
+  <!-- マクロ定義 -->
+  <macrodef name="my.javac">
+    <attribute name="src"/>
+    <attribute name="destdir"/>
+    <element name="options" optional="on"/>
+    <sequential>
+      <!-- リソースのコピー -->
+      <copy todir="@{destdir}">
+         <fileset dir="@{src}">
+           <patternset refid="resource"/>
+         </fileset>
+      </copy>
+      <javac srcdir="@{src}" destdir="@{destdir}"
+             debug="on" debuglevel="lines,vars,source"
+             optimize="off" deprecation="on" encoding="utf-8"
+             includeAntRuntime="off">
+        <classpath refid="base.classpath" />
+        <options/>
+      </javac>
+    </sequential>
+  </macrodef>
 
 </project>
