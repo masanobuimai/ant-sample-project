@@ -60,3 +60,39 @@ findbugsMain {
 findbugsTest {
   ignoreFailures = true
 }
+
+// カバレッジ測定（jacoco）の設定
+//   https://gist.github.com/1657770 より
+test {
+  jvmArgs "-javaagent:tool/jacoco-0.5.6/lib/jacocoagent.jar=destfile=${buildDir}/coverage-results/jacoco.exec",
+      '-Djacoco=true',
+      '-Xms128m',
+      '-Xmx512m',
+      '-XX:MaxPermSize=128m'
+
+  doFirst {
+    delete "${buildDir}/coverage-results"
+  }
+
+  doLast {
+    ant {
+      taskdef(name: 'jacocoreport', classname: 'org.jacoco.ant.ReportTask') {
+        classpath path: "tool/jacoco-0.5.6/lib/jacocoant.jar"
+      }
+
+      mkdir dir: "${buildDir}/reports/coverage"
+
+      jacocoreport {
+        executiondata { file: "${buildDir}/coverage-results/jacoco.exec" }
+
+        structure(name: archivesBaseName) {
+          classfiles { fileset(dir: "${buildDir}/classes/main") }
+          sourcefiles(encoding: 'UTF-8') { fileset(dir: 'src/java') }
+        }
+
+        xml destfile: "${buildDir}/reports/coverage/jacoco.xml"
+        html destdir: "${buildDir}/reports/coverage"
+      }
+    }
+  }
+}
