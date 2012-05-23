@@ -1,3 +1,24 @@
-ant.importBuild 'build-jenkins.xml'
+apply plugin: 'java'
 
-defaultTasks 'build-webapps'
+// jarファイルの名前
+archivesBaseName = "sample-apps"
+// javacのオプションに encoding=UTF-8 を追加する
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+// Gralde標準外のソースパスを追加
+sourceSets {
+    main {
+        java { srcDir 'src/java' }
+    }
+    test {
+        java { srcDir 'src/test' }
+    }
+}
+
+// 依存ライブラリはローカルにあるJarファイルを直接参照
+dependencies {
+    providedRuntime fileTree(dir: 'lib/provided', include: '*.jar')
+    compile fileTree(dir: 'lib/compile', include: '*.jar')
+    testCompile fileTree(dir: 'lib/test', include: '*.jar')
+}
+
