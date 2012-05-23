@@ -6,7 +6,7 @@ apply {
 }
 
 // jarファイルの名前
-archivesBaseName = "sample-apps"
+archivesBaseName = 'sample-apps'
 // javacのオプションに encoding=UTF-8 を追加する
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
@@ -51,7 +51,7 @@ test {
   doLast {
     ant {
       taskdef(name: 'jacocoreport', classname: 'org.jacoco.ant.ReportTask') {
-        classpath path: "tool/jacoco-0.5.6/lib/jacocoant.jar"
+        classpath path: 'tool/jacoco-0.5.6/lib/jacocoant.jar'
       }
 
       mkdir dir: "${buildDir}/reports/coverage"
