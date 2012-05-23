@@ -1,4 +1,6 @@
 apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'jetty'
 
 // jarファイルの名前
 archivesBaseName = "sample-apps"
@@ -7,18 +9,21 @@ archivesBaseName = "sample-apps"
 
 // Gralde標準外のソースパスを追加
 sourceSets {
-    main {
-        java { srcDir 'src/java' }
-    }
-    test {
-        java { srcDir 'src/test' }
-    }
+  main {
+    java { srcDir 'src/java' }
+  }
+  test {
+    java { srcDir 'src/test' }
+  }
 }
+
+// Webリソースの場所（標準だと src/main/webapp）
+webAppDirName = 'web'
 
 // 依存ライブラリはローカルにあるJarファイルを直接参照
 dependencies {
-    providedRuntime fileTree(dir: 'lib/provided', include: '*.jar')
-    compile fileTree(dir: 'lib/compile', include: '*.jar')
-    testCompile fileTree(dir: 'lib/test', include: '*.jar')
+  providedRuntime fileTree(dir: 'lib/provided', include: '*.jar')
+  compile fileTree(dir: 'lib/compile', include: '*.jar')
+  testCompile fileTree(dir: 'lib/test', include: '*.jar')
 }
 
