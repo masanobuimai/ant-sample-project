@@ -37,10 +37,6 @@ apply {
 }
 
 // mavenリポジトリからツールを取得せず，すでにあるツールを利用する
-configurations {
-  checkstyle
-  findbugs
-}
 dependencies {
   checkstyle fileTree(dir: 'tool/checkstyle-5.1/', include: '*.jar')
   findbugs fileTree(dir: 'tool/findbugs-1.3.9/lib/', include: '*.jar')
