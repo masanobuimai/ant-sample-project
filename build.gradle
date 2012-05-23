@@ -1,0 +1,3 @@
+ant.importBuild 'build-jenkins.xml'
+
+defaultTasks 'build-webapps'
