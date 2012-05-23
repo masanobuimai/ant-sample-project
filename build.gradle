@@ -1,6 +1,9 @@
-apply plugin: 'java'
-apply plugin: 'war'
-apply plugin: 'jetty'
+// apply plugin: 'java' としなくても，以下のようにまとめて書ける
+apply {
+  plugin 'java'
+  plugin 'war'
+  plugin 'jetty'
+}
 
 // jarファイルの名前
 archivesBaseName = "sample-apps"
@@ -27,3 +30,37 @@ dependencies {
   testCompile fileTree(dir: 'lib/test', include: '*.jar')
 }
 
+// checkstyleとfindbugsの設定
+apply {
+  plugin 'checkstyle'
+  plugin 'findbugs'
+}
+
+// mavenリポジトリからツールを取得せず，すでにあるツールを利用する
+configurations {
+  checkstyle
+  findbugs
+}
+dependencies {
+  checkstyle fileTree(dir: 'tool/checkstyle-5.1/', include: '*.jar')
+  findbugs fileTree(dir: 'tool/findbugs-1.3.9/lib/', include: '*.jar')
+}
+
+// checkstyleの設定ファイルや実行時のオプションをそれぞれ設定する
+checkstyleMain {
+  configFile = file('tool/checkstyle-5.1/sun_checks.xml')
+  ignoreFailures = true
+}
+
+checkstyleTest {
+  configFile = file('tool/checkstyle-5.1/sun_checks.xml')
+  ignoreFailures = true
+}
+
+findbugsMain {
+  ignoreFailures = true
+}
+
+findbugsTest {
+  ignoreFailures = true
+}
