@@ -31,38 +31,52 @@ apply {
 // オプションを一括指定（エラーが出てもチェックを進める）
 [checkstyleMain, checkstyleTest, findbugsMain, findbugsTest, pmdMain, pmdTest]*.ignoreFailures = true
 
-// カバレッジ測定（jacoco）の設定
-//   https://gist.github.com/1657770 より
-test {
-  jvmArgs "-javaagent:tool/jacoco-0.5.6/lib/jacocoagent.jar=destfile=${buildDir}/coverage-results/jacoco.exec",
-      '-Djacoco=true',
-      '-Xms128m',
-      '-Xmx512m',
-      '-XX:MaxPermSize=128m'
+// カバレッジ測定（jacoco）の設定するために，testタスクを上書きする
+task test(overwrite: true) << {
 
-  doFirst {
-    delete "${buildDir}/coverage-results"
+  // なんか納得いかないけど，ここでディレクトリ掘らないと怒られる
+  sourceSets.test.runtimeClasspath.each {
+    if (!it.exists()) ant.mkdir dir: it.absolutePath
   }
-
-  doLast {
-    ant {
-      taskdef(name: 'jacocoreport', classname: 'org.jacoco.ant.ReportTask') {
-        classpath path: 'tool/jacoco-0.5.6/lib/jacocoant.jar'
-      }
-
-      mkdir dir: "${buildDir}/reports/coverage"
-
-      jacocoreport {
-        executiondata { file: "${buildDir}/coverage-results/jacoco.exec" }
-
-        structure(name: archivesBaseName) {
-          classfiles { fileset(dir: "${buildDir}/classes/main") }
-          sourcefiles(encoding: 'UTF-8') { fileset(dir: 'src/main/java') }
+  def jacoco_home = 'tool/jacoco-0.5.6'
+  ant {
+    delete file: 'jacoco.exec'
+    mkdir dir: testResultsDir
+    taskdef(name: 'junit', classname: 'org.apache.tools.ant.taskdefs.optional.junit.JUnitTask') {
+      classpath path: 'tool/ant-junit.jar'
+    }
+    taskdef(resource: 'org/jacoco/ant/antlib.xml') {
+      classpath path: "${jacoco_home}/lib/jacocoant.jar"
+    }
+    coverage {
+      junit(fork: 'on', printsummary: 'on', maxmemory: '256m') {
+        sourceSets.test.runtimeClasspath.each {
+          classpath location: it.absolutePath
         }
-
-        xml destfile: "${buildDir}/reports/coverage/jacoco.xml"
-        html destdir: "${buildDir}/reports/coverage"
+        formatter type: 'xml'
+        batchtest(todir: testResultsDir) {
+          fileset(dir: sourceSets.test.output.classesDir, includes: '**/*Test.class')
+        }
       }
+    }
+
+    // カバレッジレポートの作成までやっちゃう
+    mkdir dir: "${buildDir}/reports/coverage"
+    report {
+      executiondata { file: "jacoco.exec" }
+      structure(name: archivesBaseName) {
+        classfiles { fileset(dir: sourceSets.main.output.classesDir) }
+        sourcefiles(encoding: 'UTF-8') { fileset(dir: sourceSets.main.java.srcDirs.toArray()[0]) }
+      }
+      xml destfile: "${buildDir}/reports/coverage/jacoco.xml"
+      html destdir: "${buildDir}/reports/coverage"
     }
   }
 }
+// testタスクの依存関係とかを定義する（何でか，上の task test ではできなかった。
+test {
+  dependsOn classes, testClasses
+  description = 'Runs the unit tests.'
+  group = 'Verification'
+}
+
