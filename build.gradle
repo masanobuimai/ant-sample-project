@@ -20,7 +20,7 @@ dependencies {
   testCompile 'junit:junit:4.10'
 }
 
-// checkstyleとfindbugsの設定
+// checkstyleとfindbugsなどインスペクション系の設定
 apply {
   plugin 'checkstyle'
   plugin 'findbugs'
@@ -28,12 +28,8 @@ apply {
   plugin 'jdepend'
 }
 
-checkstyleMain { ignoreFailures = true }
-checkstyleTest { ignoreFailures = true }
-findbugsMain { ignoreFailures = true }
-findbugsTest { ignoreFailures = true }
-pmdMain { ignoreFailures = true }
-pmdTest { ignoreFailures = true }
+// オプションを一括指定（エラーが出てもチェックを進める）
+[checkstyleMain, checkstyleTest, findbugsMain, findbugsTest, pmdMain, pmdTest]*.ignoreFailures = true
 
 // カバレッジ測定（jacoco）の設定
 //   https://gist.github.com/1657770 より
