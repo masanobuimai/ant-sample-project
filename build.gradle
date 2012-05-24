@@ -31,52 +31,10 @@ apply {
 // オプションを一括指定（エラーが出てもチェックを進める）
 [checkstyleMain, checkstyleTest, findbugsMain, findbugsTest, pmdMain, pmdTest]*.ignoreFailures = true
 
-// カバレッジ測定（jacoco）の設定するために，testタスクを上書きする
-task test(overwrite: true) << {
-
-  // なんか納得いかないけど，ここでディレクトリ掘らないと怒られる
-  sourceSets.test.runtimeClasspath.each {
-    if (!it.exists()) ant.mkdir dir: it.absolutePath
-  }
-  def jacoco_home = 'tool/jacoco-0.5.6'
-  ant {
-    delete file: 'jacoco.exec'
-    mkdir dir: testResultsDir
-    taskdef(name: 'junit', classname: 'org.apache.tools.ant.taskdefs.optional.junit.JUnitTask') {
-      classpath path: 'tool/ant-junit.jar'
-    }
-    taskdef(resource: 'org/jacoco/ant/antlib.xml') {
-      classpath path: "${jacoco_home}/lib/jacocoant.jar"
-    }
-    coverage {
-      junit(fork: 'on', printsummary: 'on', maxmemory: '256m') {
-        sourceSets.test.runtimeClasspath.each {
-          classpath location: it.absolutePath
-        }
-        formatter type: 'xml'
-        batchtest(todir: testResultsDir) {
-          fileset(dir: sourceSets.test.output.classesDir, includes: '**/*Test.class')
-        }
-      }
-    }
-
-    // カバレッジレポートの作成までやっちゃう
-    mkdir dir: "${buildDir}/reports/coverage"
-    report {
-      executiondata { file: "jacoco.exec" }
-      structure(name: archivesBaseName) {
-        classfiles { fileset(dir: sourceSets.main.output.classesDir) }
-        sourcefiles(encoding: 'UTF-8') { fileset(dir: sourceSets.main.java.srcDirs.toArray()[0]) }
-      }
-      xml destfile: "${buildDir}/reports/coverage/jacoco.xml"
-      html destdir: "${buildDir}/reports/coverage"
-    }
-  }
+// Coverturaプラグインの設定
+//   https://github.com/valkolovos/gradle_cobertura/wiki
+buildscript {
+  apply from: 'https://github.com/valkolovos/gradle_cobertura/raw/master/repo/gradle_cobertura/gradle_cobertura/1.2/coberturainit.gradle'
 }
-// testタスクの依存関係とかを定義する（何でか，上の task test ではできなかった。
-test {
-  dependsOn classes, testClasses
-  description = 'Runs the unit tests.'
-  group = 'Verification'
-}
+
 
