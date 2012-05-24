@@ -43,23 +43,8 @@ dependencies {
 }
 
 // checkstyleの設定ファイルや実行時のオプションをそれぞれ設定する
-checkstyleMain {
-  configFile = file('tool/checkstyle-5.1/sun_checks.xml')
-  ignoreFailures = true
-}
-
-checkstyleTest {
-  configFile = file('tool/checkstyle-5.1/sun_checks.xml')
-  ignoreFailures = true
-}
-
-findbugsMain {
-  ignoreFailures = true
-}
-
-findbugsTest {
-  ignoreFailures = true
-}
+[checkstyleMain, checkstyleTest]*.configFile = file('tool/checkstyle-5.1/sun_checks.xml')
+[checkstyleMain, checkstyleTest, findbugsMain, findbugsTest]*.ignoreFailures = true
 
 // カバレッジ測定（jacoco）の設定
 //   https://gist.github.com/1657770 より
