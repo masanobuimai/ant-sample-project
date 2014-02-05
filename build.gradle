@@ -3,6 +3,7 @@ apply {
   plugin 'java'
   plugin 'war'
   plugin 'jetty'
+  plugin 'jacoco'
 }
 
 // jarファイルの名前
@@ -30,11 +31,5 @@ apply {
 
 // オプションを一括指定（エラーが出てもチェックを進める）
 [checkstyleMain, checkstyleTest, findbugsMain, findbugsTest, pmdMain, pmdTest]*.ignoreFailures = true
-
-// Coverturaプラグインの設定
-//   https://github.com/valkolovos/gradle_cobertura/wiki
-buildscript {
-  apply from: 'https://github.com/valkolovos/gradle_cobertura/raw/master/repo/gradle_cobertura/gradle_cobertura/1.2/coberturainit.gradle'
-}
 
 
