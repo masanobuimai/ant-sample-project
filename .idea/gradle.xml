@@ -2,7 +2,7 @@
 <project version="4">
   <component name="GradleSettings">
     <option name="gradleHome" value="C:/java2/tools/gradle-1.0-rc-3" />
-    <option name="linkedProjectPath" value="$PROJECT_DIR$/build.gradle" />
+    <option name="linkedProjectPath" value="C:\tmp\ant-sample-project\build.gradle" />
   </component>
 </project>
 
