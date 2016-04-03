@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="sample-apps" default="build-webapps" basedir=".">
+<project name="sample-apps" default="build-webapps" basedir="." xmlns:jacoco="antlib:org.jacoco.ant">
   <import file="build-common.xml" />
 
 
@@ -31,7 +31,6 @@
     </war>
   </target>
 
-
   <target name="compile-test" depends="compile-main">
     <my.javac src="${src.test.dir}" destdir="${dest.test.dir}">
       <options>
@@ -40,19 +39,17 @@
     </my.javac>
   </target>
 
+  <property name="jacoco.home" value="${tool.dir}/jacoco-0.7.6" />
+  <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+    <classpath path="${jacoco.home}/lib/jacocoant.jar" />
+  </taskdef>
+
 
   <target name="test" depends="compile-test" description="テストの実行とカバレッジレポートの作成">
-    <!-- EclEmma(JaCoCo)の定義 -->
-    <property name="jacoco.home" value="${tool.dir}/jacoco-0.5.6" />
-    <taskdef resource="org/jacoco/ant/antlib.xml">
-      <classpath path="${jacoco.home}/lib/jacocoant.jar" />
-    </taskdef>
-    <!-- ここまで -->
-
     <delete dir="${result.test.dir}" />
     <mkdir dir="${result.test.dir}" />
 
-    <coverage>
+    <jacoco:coverage>
       <junit fork="on" printsummary="on" maxmemory="256m">
         <classpath location="${dest.test.dir}" />
         <classpath refid="test.classpath" />
@@ -62,9 +59,9 @@
           <fileset dir="${dest.test.dir}" includes="**/*Test.class" />
         </batchtest>
       </junit>
-    </coverage>
+    </jacoco:coverage>
 
-    <report>
+    <jacoco:report>
       <executiondata>
         <file file="jacoco.exec" />
       </executiondata>
@@ -79,16 +76,7 @@
       <xml destfile="${result.dir}/coverage_jacoco.xml" />
       <html destdir="${dest.dir}/report/coverage" />
 
-    </report>
-    <!-- JaCoCoのレポートをEMMA形式に変換する -->
-    <xslt style="${jacoco.home}/jacoco_to_emma.xslt"
-          in="${result.dir}/coverage_jacoco.xml"
-          out="${result.dir}/coverage.xml"
-          classpath="${jacoco.home}/saxon9he.jar">
-      <xmlcatalog>
-        <dtd publicid="-//JACOCO//DTD Report 1.0//EN" location="${jacoco.home}/coverage/report.dtd" />
-      </xmlcatalog>
-    </xslt>
+    </jacoco:report>
   </target>
 
 
@@ -121,7 +109,7 @@
 
 
   <target name="findbugs" depends="compile-main">
-    <property name="findbugs.home" value="${tool.dir}/findbugs-1.3.9" />
+    <property name="findbugs.home" value="${tool.dir}/findbugs-3.0.1" />
     <taskdef name="findbugs"
              classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
              classpath="${findbugs.home}/lib/findbugs-ant.jar" />

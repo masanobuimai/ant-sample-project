@@ -1,6 +1,7 @@
 
 /dest
-/.idea/workspace.xml
+/classes
+/.idea
 *.exec
 /.gradle
 /build
