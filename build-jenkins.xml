@@ -5,6 +5,7 @@
 
   <target name="clean" description="クリーンアップ">
     <delete dir="${dest.dir}" />
+    <delete file="jacoco.exec" />
   </target>
 
 
